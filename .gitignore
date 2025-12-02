@@ -3,22 +3,13 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-*.pkl
-*.db
-
-# Virtual environment
-venv/
+*.pdb
+*.pdb
+.Python
 env/
 .venv/
-
-# Python build
-build/
-dist/
-pip-wheel-metadata/
-*.egg-info/
-
-# Logs
-*.log
+venv/
+*.sqlite3
 
 # Environment files
 .env
@@ -26,6 +17,42 @@ pip-wheel-metadata/
 .env.production
 .env.development
 
-# Next.js static output
+# VSCode
+.vscode/
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Docker
+*.pid
+*.seed
+*.pid.lock
+
+# Node modules (Global ignore — prevents warnings)
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Next.js build output
+.next/
 out/
+
+# Coverage
+coverage/
+*.lcov
+
+# PyTest
+.pytest_cache/
+
+# Build artifacts
+dist/
 build/
+
+# Docker Compose
+docker-compose.override.yml
