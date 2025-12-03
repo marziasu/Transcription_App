@@ -17,6 +17,17 @@ Experience the application live:
 - **Persistent Storage:** Data is securely stored using PostgreSQL (managed by Render)
 - **Dockerized:** Fully containerized for easy deployment
 
+## 📸 Application Preview
+
+<div align="center">
+  <img src="./assets/screenshots/transcription-historoy.png" alt="Session History" width="700" />
+  <p><em>Transcription History Dashboard</em></p>
+
+   <img src="./assets/screenshots/realtime-transcription.png" alt="Real-Time Transcription" width="700" />
+  <p><em>Real-Time Transcription Interface</em></p>
+</div>
+
+
 ## 🛠️ Tech Stack
 
 | Component | Technology |
