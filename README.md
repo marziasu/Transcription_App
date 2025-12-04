@@ -17,6 +17,17 @@ Experience the application live:
 - **Persistent Storage:** Data is securely stored using PostgreSQL (managed by Render)
 - **Dockerized:** Fully containerized for easy deployment
 
+## 📸 Application Preview
+
+<div align="center">
+  <img src="./assets/screenshots/transcription-historoy.png" alt="Session History" width="700" />
+  <p><em>Transcription History Dashboard</em></p>
+
+   <img src="./assets/screenshots/realtime-transcription.png" alt="Real-Time Transcription" width="700" />
+  <p><em>Real-Time Transcription Interface</em></p>
+</div>
+
+
 ## 🛠️ Tech Stack
 
 | Component | Technology |
@@ -26,6 +37,83 @@ Experience the application live:
 | **AI Model** | Vosk (Small English Model) |
 | **Database** | PostgreSQL (Hosted on Render) |
 | **DevOps** | Docker, Docker Compose, Render |
+
+## 🏗️ Architecture Overview
+
+### System Architecture 
+```
+┌─────────────────┐         WebSocket           ┌──────────────────┐
+│   Next.js       │ ◄─────────────────────────► │   FastAPI        │
+│   Frontend      │         (Audio Stream)      │   Backend        │
+│                 │                             │                  │
+│ • UI Components │         HTTP/REST           │ • WebSocket      │
+│ • Audio Capture │ ◄─────────────────────────► │ • Vosk STT       │
+│ • WebSocket     │      (Session CRUD)         │ • Session Mgmt   │
+└─────────────────┘                             └──────────────────┘
+                                                         │
+                                                         │
+                                                         ▼
+                                                ┌──────────────────┐
+                                                │   PostgreSQL     │
+                                                │   Database       │
+                                                │   (Render)       │
+                                                │                  │
+                                                │ • Sessions       │
+                                                │ • Transcripts    │
+                                                │ • Metadata       │
+                                                └──────────────────┘
+```
+
+### 🔄 Data Flow
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Backend
+    participant Vosk
+    participant Database
+
+    User->>Frontend: Start Recording
+    Frontend->>Backend: WebSocket Connect
+    loop Real-time Stream
+        Frontend->>Backend: Audio Chunk
+        Backend->>Vosk: Process Audio
+        Vosk->>Backend: Partial/Final Text
+        Backend->>Frontend: Transcription Result
+        Frontend->>User: Display Text
+    end
+    User->>Frontend: Stop Recording
+    Frontend->>Backend: Save Session (REST)
+    Backend->>Database: Store Transcript
+    Database->>Backend: Confirmation
+    Backend->>Frontend: Session Saved
+```
+
+### 🎯 Key Components
+
+#### Frontend (Next.js)
+- **Audio Processing**: MediaRecorder API for browser audio capture
+- **WebSocket Client**: Real-time bidirectional communication
+- **State Management**: React hooks for session and transcription state
+- **UI/UX**: Tailwind CSS for responsive design
+
+#### Backend (FastAPI)
+- **WebSocket Server**: Handles concurrent audio streams
+- **Speech Recognition**: Vosk model integration (offline, CPU-based)
+- **REST API**: CRUD operations for session management
+- **Database ORM**: SQLAlchemy for PostgreSQL interactions
+
+#### Database (PostgreSQL)
+- **Sessions Table**: Stores transcription metadata
+- **Hosted on Render**: Managed PostgreSQL instance
+- **Automatic Backups**: Data persistence and recovery
+
+### ⚡ Performance Features
+
+- **Async Architecture**: Non-blocking I/O throughout the stack
+- **Streaming Processing**: Real-time audio processing without buffering
+- **Connection Pooling**: Efficient database connection management
+- **Docker Optimization**: Multi-stage builds for minimal image size
 
 ## 📂 Repository Structure
 ```bash

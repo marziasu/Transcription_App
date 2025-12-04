@@ -171,6 +171,36 @@ python test_ws_client.py
 - **AI Model:** Vosk (offline speech recognition)
 - **Audio Processing:** FFmpeg
 
+# ⚡ Async Architecture
+
+This project uses **async/await** everywhere for maximum performance and scalability.
+
+## Key Features
+
+### ✓ FastAPI Async Routes
+All endpoints are non-blocking, allowing **thousands of concurrent connections**.
+
+### ✓ Async SQLAlchemy (2.0+)
+```python
+async_engine = create_async_engine(settings.database_url)
+async_session = async_sessionmaker(async_engine, expire_on_commit=False)
+```
+
+### ✓ Async WebSocket Streaming
+Real-time transcription uses asynchronous receive/send for **smooth audio streaming**.
+
+### ✓ Non-blocking Audio Processing Pipeline
+FFmpeg calls run in **async subprocess mode** to avoid blocking the event loop.
+
+### ✓ Exception Handling
+Route-level error handling with try-catch blocks for robust error management.
+
+**Benefits:**
+- ⚡ Faster response time
+- 📈 High throughput
+- 🚀 Better performance under real-time load
+- 🛡️ Graceful error handling
+
 ## 📖 Resources
 
 - [FastAPI Docs](https://fastapi.tiangolo.com/)
