@@ -1,19 +1,39 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .config import get_settings
 from .database import init_db
 from .routes import websocket_router, sessions_router
+from contextlib import asynccontextmanager
+from .database import init_db, dispose_engine, check_db_connection
+
 
 settings = get_settings()
 
-# Initialize database
-init_db()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup and shutdown events"""
+    # Startup
+    print("🚀 Starting application...")
+    init_db()
+    
+    if check_db_connection():
+        print("✅ Database connection successful")
+    else:
+        print("❌ Database connection failed")
+    
+    yield
+    
+    # Shutdown
+    print("🛑 Shutting down application...")
+    dispose_engine()
+    print("✅ Connection pool disposed")
 
-# Create FastAPI app
 app = FastAPI(
     title="Real-Time Transcription API",
     description="CPU-based real-time speech-to-text service using Vosk",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS middleware

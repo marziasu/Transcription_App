@@ -1,3 +1,4 @@
+import logging
 from fastapi import WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 from typing import Dict
@@ -8,6 +9,8 @@ from ..services.transcription_service import TranscriptionService
 from ..services.session_service import SessionService
 from ..schemas.session import TranscriptionSessionCreate
 from ..config import get_settings
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -36,11 +39,11 @@ class ConnectionManager:
             "type": "session_id",
             "id": session_id
         })
-        print(f"[{session_id}] ✅ Session initialized and ID sent to client")
+        logger.info(f"Session initialized and ID sent to client: {session_id}")
     
     async def disconnect(self, session_id: str, db: Session):
         """Handle WebSocket disconnection and save session"""
-        print(f"[{session_id}] 🔄 Starting disconnect process...")
+        logger.info(f"Starting disconnect process for session: {session_id}")
         
         if session_id in self.active_connections:
             del self.active_connections[session_id]
@@ -51,12 +54,8 @@ class ConnectionManager:
             complete_transcript = " ".join(data["transcript"])
             word_count = len(complete_transcript.split()) if complete_transcript else 0
             
-            print(f"[{session_id}] 📊 Session stats:")
-            print(f"  - Audio chunks received: {data['audio_chunks_received']}")
-            print(f"  - Transcript parts: {len(data['transcript'])}")
-            print(f"  - Complete transcript: '{complete_transcript[:200]}'")
-            print(f"  - Word count: {word_count}")
-            print(f"  - Duration: {duration:.2f}s")
+            logger.info(f"Session stats for {session_id}: chunks={data['audio_chunks_received']}, parts={len(data['transcript'])}, words={word_count}, duration={duration:.2f}s")
+            logger.debug(f"Complete transcript for {session_id}: {complete_transcript[:200]}")
             
             # Save session even if empty
             try:
@@ -68,17 +67,15 @@ class ConnectionManager:
                 )
                 
                 saved_session = SessionService.create_session(db, session_create)
-                print(f"[{session_id}] ✅ Session saved to database with ID: {saved_session.id}")
+                logger.info(f"Session saved to database: {session_id} -> {saved_session.id}")
                 
             except Exception as e:
-                print(f"[{session_id}] ❌ Error saving session to database: {e}")
-                import traceback
-                traceback.print_exc()
+                logger.error(f"Error saving session {session_id} to database: {e}", exc_info=True)
             
             # Cleanup
             del self.session_data[session_id]
         else:
-            print(f"[{session_id}] ⚠️ No session data found for {session_id}")
+            logger.warning(f"No session data found for {session_id}")
     
     async def handle_transcription(
         self, 
@@ -88,7 +85,7 @@ class ConnectionManager:
     ):
         """Handle real-time transcription with detailed logging"""  
         recognizer = self.transcription_service.create_recognizer()
-        print(f"[{session_id}] 🎤 Recognizer created, waiting for audio...")
+        logger.info(f"Recognizer created for session {session_id}, waiting for audio")
         TIMEOUT = 30
 
         try:
@@ -106,10 +103,10 @@ class ConnectionManager:
                     
                     if has_bytes:
                         audio_size = len(message["bytes"])
-                        print(f"[{session_id}] 🎵 Received {audio_size} bytes of audio")
+                        logger.debug(f"Received {audio_size} bytes of audio for session {session_id}")
                     
                     if has_text:
-                        print(f"[{session_id}] 📝 Received text: {message['text'][:100]}")
+                        logger.debug(f"Received text for session {session_id}: {message['text'][:100]}")
                     
                     # Handle binary audio data
                     if has_bytes:
@@ -118,12 +115,12 @@ class ConnectionManager:
                         
                         # Check for END signal
                         if audio_data == b"__END__":
-                            print(f"[{session_id}] 🛑 Binary END signal")
+                            logger.info(f"Binary END signal received for session {session_id}")
                             await self._send_final_result(websocket, session_id, recognizer, db)
                             break
                         
                         # Process audio
-                        print(f"[{session_id}] 🔄 Processing audio chunk #{self.session_data[session_id]['audio_chunks_received']}")
+                        logger.debug(f"Processing audio chunk #{self.session_data[session_id]['audio_chunks_received']} for session {session_id}")
                         await self._process_audio(websocket, session_id, recognizer, audio_data)
                     
                     # Handle text/JSON commands
@@ -132,38 +129,36 @@ class ConnectionManager:
                         try:
                             data = json.loads(text_data)
                             if data.get("action") == "end_audio":
-                                print(f"[{session_id}] 🛑 JSON END signal")
+                                logger.info(f"JSON END signal received for session {session_id}")
                                 await self._send_final_result(websocket, session_id, recognizer, db)
                                 break
                         except json.JSONDecodeError:
-                            print(f"[{session_id}] ⚠️ Invalid JSON received")
+                            logger.warning(f"Invalid JSON received for session {session_id}")
                     
                     # Handle disconnect
                     elif msg_type == "websocket.disconnect":
-                        print(f"[{session_id}] 🔌 Disconnect signal")
+                        logger.info(f"Disconnect signal received for session {session_id}")
                         break
                 
                 except asyncio.TimeoutError:
-                    print(f"[{session_id}] ⏰ Timeout after {TIMEOUT}s")
+                    logger.info(f"Timeout after {TIMEOUT}s for session {session_id}")
                     await self._send_final_result(websocket, session_id, recognizer, db)
                     break
 
         except WebSocketDisconnect:
-            print(f"[{session_id}] 🔌 WebSocket disconnected")
+            logger.info(f"WebSocket disconnected for session {session_id}")
             try:
                 final_text = self.transcription_service.get_final_result(recognizer)
                 if final_text and final_text.strip():
                     self.session_data[session_id]["transcript"].append(final_text)
-                    print(f"[{session_id}] 📝 Final text on disconnect: {final_text}")
+                    logger.info(f"Final text on disconnect for session {session_id}: {final_text}")
             except Exception as e:
-                print(f"[{session_id}] ⚠️ Error getting final text: {e}")
+                logger.warning(f"Error getting final text for session {session_id}: {e}")
             
             await self.disconnect(session_id, db)
         
         except Exception as e:
-            print(f"[{session_id}] ❌ Unexpected error: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"Unexpected error for session {session_id}: {e}", exc_info=True)
             await self.disconnect(session_id, db)
     
     async def _send_final_result(self, websocket: WebSocket, session_id: str, recognizer, db: Session):

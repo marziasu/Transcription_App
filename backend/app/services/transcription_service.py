@@ -1,23 +1,30 @@
 import os
 import json
+import logging
 from vosk import Model, KaldiRecognizer
 from typing import Dict, Optional
+
+logger = logging.getLogger(__name__)
 
 class TranscriptionService:
     """Service for handling speech-to-text transcription using Vosk"""
     
     def __init__(self, model_path: str):
         if not os.path.exists(model_path):
+            logger.error(f"Vosk model not found at {model_path}")
             raise FileNotFoundError(
                 f"Vosk model not found at {model_path}. "
                 "Please download a model from https://alphacephei.com/vosk/models"
             )
         
+        logger.info(f"Loading Vosk model from {model_path}")
         self.model = Model(model_path)
         self.sample_rate = 16000
+        logger.info("Vosk model loaded successfully")
     
     def create_recognizer(self) -> KaldiRecognizer:
         """Create a new recognizer instance for a transcription session"""
+        logger.debug("Creating new Kaldi recognizer")
         return KaldiRecognizer(self.model, self.sample_rate)
     
     def process_audio_chunk(
