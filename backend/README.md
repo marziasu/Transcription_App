@@ -163,14 +163,6 @@ python test_ws_client.py
 | Database connection error | Check `DATABASE_URL` and PostgreSQL status |
 | CORS error | Add frontend URL to `cors_origins` |
 
-## 📚 Tech Stack
-
-- **Framework:** FastAPI
-- **Server:** Uvicorn
-- **Database:** PostgreSQL + SQLAlchemy
-- **AI Model:** Vosk (offline speech recognition)
-- **Audio Processing:** FFmpeg
-
 # ⚡ Async Architecture
 
 This project uses **async/await** everywhere for maximum performance and scalability.
